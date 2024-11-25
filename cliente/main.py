@@ -14,6 +14,12 @@ import socket
 VIDEOS_CLIENTE_FOLDER = "./videos_cliente"
 VIDEOS_PROCESADOS_FOLDER = "./videos_procesados_c"
 
+if not os.path.exists(VIDEOS_CLIENTE_FOLDER):
+    os.makedirs(VIDEOS_CLIENTE_FOLDER)
+    
+if not os.path.exists(VIDEOS_PROCESADOS_FOLDER):
+    os.makedirs(VIDEOS_PROCESADOS_FOLDER)
+
 class VideoPlayer:
     def __init__(self, video_area):
         self.video_area = video_area
