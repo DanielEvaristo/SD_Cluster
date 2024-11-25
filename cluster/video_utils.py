@@ -48,6 +48,14 @@ def dividir_video(filepath, output_folder, num_partes):
 def unir_videos(partes, output_folder, output_filename="video_final.mp4"):
     """
     Une múltiples videos en un solo archivo y los guarda en una carpeta.
+
+    Args:
+        partes (list): Lista de rutas de las partes del video procesadas.
+        output_folder (str): Carpeta donde se guardará el video final.
+        output_filename (str): Nombre del archivo del video final.
+
+    Returns:
+        str: Ruta del archivo de video final.
     """
     if not partes:
         raise ValueError("No se proporcionaron partes para unir.")
@@ -57,6 +65,7 @@ def unir_videos(partes, output_folder, output_filename="video_final.mp4"):
 
     output_path = os.path.join(output_folder, output_filename)
 
+    # Abrir el primer video para obtener propiedades comunes
     cap = cv2.VideoCapture(partes[0])
     if not cap.isOpened():
         raise Exception(f"Error al abrir el archivo de video: {partes[0]}")
@@ -67,8 +76,10 @@ def unir_videos(partes, output_folder, output_filename="video_final.mp4"):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     cap.release()
 
+    # Crear un VideoWriter para el video final
     out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
 
+    # Leer y escribir cada parte al archivo final
     for parte in partes:
         cap = cv2.VideoCapture(parte)
         if not cap.isOpened():
@@ -85,3 +96,4 @@ def unir_videos(partes, output_folder, output_filename="video_final.mp4"):
     out.release()
     print(f"Video final guardado en: {output_path}")
     return output_path
+

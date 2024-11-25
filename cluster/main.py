@@ -17,20 +17,13 @@ NODES = [
     {"host": "127.0.0.1", "port": 6001},
 ]
 
-if not os.path.exists(RECEIVED_FOLDER):
-    os.makedirs(RECEIVED_FOLDER)
-
-if not os.path.exists(PROCESSED_PARTS_FOLDER):
-    os.makedirs(PROCESSED_PARTS_FOLDER)
-
-if not os.path.exists(PROCESSED_VIDEOS_FOLDER):
-    os.makedirs(PROCESSED_VIDEOS_FOLDER)
-
-if not os.path.exists(VIDEO_FINAL_FOLDER):
-    os.makedirs(VIDEO_FINAL_FOLDER)
+# Crear carpetas si no existen
+for folder in [RECEIVED_FOLDER, PROCESSED_PARTS_FOLDER, PROCESSED_VIDEOS_FOLDER, VIDEO_FINAL_FOLDER]:
+    os.makedirs(folder, exist_ok=True)
 
 # Para almacenar las partes recibidas
 processed_parts = []
+original_filename = ""
 
 
 def start_cluster():
@@ -48,12 +41,15 @@ def start_cluster():
 
 
 def handle_connection(conn, addr):
+    global original_filename
     with conn:
         filename_length = conn.recv(4)
         filename_length = int.from_bytes(filename_length, "big")
-        filename = conn.recv(filename_length).decode("utf-8")
+        original_filename = conn.recv(filename_length).decode("utf-8")  # Guardar nombre original
 
-        filepath = os.path.join(RECEIVED_FOLDER, filename)
+        filepath = os.path.join(RECEIVED_FOLDER, original_filename)
+        clear_folders()
+
         with open(filepath, 'wb') as f:
             while (data := conn.recv(1024)):
                 f.write(data)
@@ -95,7 +91,7 @@ def send_to_node(host, port, filepath):
 
 
 def receive_processed_parts():
-    global processed_parts
+    global processed_parts, original_filename
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((HOST, CLUSTER_PORT))
         server_socket.listen()
@@ -120,7 +116,11 @@ def receive_processed_parts():
                 # Verificar si se han recibido todas las partes
                 if len(processed_parts) == len(NODES):
                     processed_parts.sort(key=lambda x: int(os.path.basename(x).split('_')[2].split('.')[0]))
-                    video_final_path = unir_videos(processed_parts, VIDEO_FINAL_FOLDER)
+                    
+                    # Generar el nombre final con el original
+                    final_filename = f"{os.path.splitext(original_filename)[0]}_FINAL.mp4"
+                    video_final_path = unir_videos(processed_parts, VIDEO_FINAL_FOLDER, final_filename)
+                    
                     processed_parts = []  # Reiniciar lista después de unir las partes
 
                     # Enviar el video final al cliente
@@ -147,6 +147,31 @@ def send_video_to_client(client_host, client_port, video_path):
             print(f"Video final enviado al cliente en {client_host}:{client_port}")
     except Exception as e:
         print(f"Error al enviar el video final al cliente: {e}")
+
+
+def clear_folders():
+    """
+    Elimina todos los archivos en las carpetas del clúster antes de procesar un nuevo video.
+    """
+    folders_to_clear = [
+        RECEIVED_FOLDER,
+        PROCESSED_PARTS_FOLDER,
+        PROCESSED_VIDEOS_FOLDER,
+        VIDEO_FINAL_FOLDER,
+    ]
+
+    for folder in folders_to_clear:
+        for file in os.listdir(folder):
+            file_path = os.path.join(folder, file)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                    print(f"Archivo eliminado: {file_path}")
+                elif os.path.isdir(file_path):
+                    os.rmdir(file_path)
+                    print(f"Directorio eliminado: {file_path}")
+            except Exception as e:
+                print(f"Error al eliminar {file_path}: {e}")
 
 
 if __name__ == "__main__":
