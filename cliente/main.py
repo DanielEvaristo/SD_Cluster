@@ -8,11 +8,11 @@ from tkinter import messagebox
 import cv2
 import tkinter as tk
 from ui import create_ui
+import socket
 
 # Rutas de las carpetas
 VIDEOS_CLIENTE_FOLDER = "./videos_cliente"
 VIDEOS_PROCESADOS_FOLDER = "./videos_procesados_c"
-
 
 class VideoPlayer:
     def __init__(self, video_area):
@@ -102,6 +102,34 @@ def get_video_thumbnails(folder, master):
     except Exception as e:
         messagebox.showerror("Error", f"Error al cargar miniaturas: {e}")
         return []
+    
+def enviar_video(video_path):
+    HOST = '127.0.0.1'  # Dirección del servidor
+    PORT = 5000         # Puerto del servidor
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            client_socket.connect((HOST, PORT))
+
+            # Enviar el tamaño del nombre del archivo
+            filename = os.path.basename(video_path)
+            filename_bytes = filename.encode("utf-8")
+            filename_length = len(filename_bytes)
+            client_socket.sendall(filename_length.to_bytes(4, "big"))  # Enviar longitud en 4 bytes
+            client_socket.sendall(filename_bytes)  # Enviar el nombre del archivo
+
+            # Enviar el contenido del archivo
+            with open(video_path, 'rb') as f:
+                while True:
+                    data = f.read(1024)
+                    if not data:
+                        break
+                    client_socket.sendall(data)
+            print(f"Archivo enviado: {video_path}")
+            messagebox.showinfo("Éxito", f"Archivo enviado: {filename}")
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo enviar el archivo: {e}")
+
 
 def main():
     root = tk.Tk()
@@ -170,7 +198,23 @@ def main():
             col = i % 2
             thumbnail_button.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
 
-    create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar=on_cargar, on_grabar=on_grabar)
+    # Función para manejar el evento del botón "Enviar"
+    def on_enviar(video_path):
+        if not video_path or not os.path.exists(video_path):
+            messagebox.showerror("Error", "No hay ningún video seleccionado o el archivo no existe.")
+            return
+        enviar_video(video_path)  # Lógica para enviar el archivo al servidor
+
+
+    create_ui(
+        thumbnails_cliente,
+        thumbnails_procesados,
+        video_player,
+        root,
+        on_cargar=on_cargar,
+        on_grabar=on_grabar,
+        on_enviar=on_enviar
+    )
 
 
 if __name__ == "__main__":
