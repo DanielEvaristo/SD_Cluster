@@ -2,3 +2,8 @@ videos_cliente
 videos_procesados_c
 cluster_received
 processed_videos
+divided_parts
+processed_videos
+node_processed
+processed_parts
+node_received

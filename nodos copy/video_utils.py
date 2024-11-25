@@ -1,52 +1,76 @@
-import cv2
 import os
+import cv2
 
-def procesar_video(filepath, output_path):
-    """
-    Editar la parte del video (aplicar un filtro de contraste en blanco y negro).
-    """
+def dividir_video(filepath, output_folder, num_partes):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     cap = cv2.VideoCapture(filepath)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    if not cap.isOpened():
+        raise Exception(f"Error al abrir el archivo de video: {filepath}")
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frames_por_parte = total_frames // num_partes
+    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
-    
-    out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height), isColor=False)
-    
+
+    print(f"Total de frames: {total_frames}, Frames por parte: {frames_por_parte}, FPS: {fps}")
+
+    partes = []
+    for i in range(num_partes):
+        output_path = os.path.join(output_folder, f"parte_{i + 1}.mp4")
+        partes.append(output_path)
+
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
+
+        for _ in range(frames_por_parte):
+            ret, frame = cap.read()
+            if not ret:
+                break
+            out.write(frame)
+
+        out.release()
+
+    if total_frames % num_partes > 0:
+        print("Distribuyendo frames extra a la última parte.")
+        extra_writer = cv2.VideoWriter(partes[-1], cv2.VideoWriter_fourcc(*'mp4v'), fps, (ancho, alto))
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            extra_writer.write(frame)
+        extra_writer.release()
+
+    cap.release()
+    return partes
+
+def editar_video(filepath, output_folder):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        raise Exception(f"Error al abrir el archivo de video: {filepath}")
+
+    output_path = os.path.join(output_folder, f"processed_{os.path.basename(filepath)}")
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
+
+    print(f"Editando video: {filepath}")
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-        
-        # Convertir a escala de grises
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        out.write(gray_frame)
-    
+        # Apply chromatic effect
+        chromatic_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
+        out.write(chromatic_frame)
+
     cap.release()
     out.release()
     print(f"Video procesado y guardado en: {output_path}")
-
-
-def guardar_archivo(conn, filepath):
-    """
-    Recibe un archivo del cluster y lo guarda en el nodo.
-    """
-    with open(filepath, 'wb') as f:
-        while (data := conn.recv(1024)):
-            f.write(data)
-    print(f"Archivo guardado en: {filepath}")
-
-
-def enviar_archivo(conn, filepath):
-    """
-    Envía un archivo procesado de vuelta al cluster.
-    """
-    filename = os.path.basename(filepath)
-    filename_bytes = filename.encode("utf-8")
-    filename_length = len(filename_bytes)
-    conn.sendall(filename_length.to_bytes(4, "big"))
-    conn.sendall(filename_bytes)
-
-    with open(filepath, "rb") as f:
-        while (data := f.read(1024)):
-            conn.sendall(data)
-    print(f"Archivo enviado: {filepath}")
+    return output_path
