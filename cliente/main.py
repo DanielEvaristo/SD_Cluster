@@ -136,6 +136,29 @@ def enviar_video(video_path):
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo enviar el archivo: {e}")
 
+def recibir_video_procesado():
+    HOST = '127.0.0.1'  # Dirección local para recibir el video procesado
+    PORT = 5002         # Puerto para recibir el video procesado
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind((HOST, PORT))
+        server_socket.listen()
+        print(f"Esperando video procesado en {HOST}:{PORT}...")
+
+        while True:
+            conn, addr = server_socket.accept()
+            print(f"Conexión aceptada desde {addr}")
+            with conn:
+                filename_length = conn.recv(4)
+                filename_length = int.from_bytes(filename_length, "big")
+                filename = conn.recv(filename_length).decode("utf-8")
+
+                filepath = os.path.join(VIDEOS_PROCESADOS_FOLDER, filename)
+                with open(filepath, 'wb') as f:
+                    while (data := conn.recv(1024)):
+                        f.write(data)
+
+                print(f"Video procesado recibido y guardado en: {filepath}")
 
 def main():
     root = tk.Tk()
@@ -149,6 +172,9 @@ def main():
 
     # Crear el reproductor de video
     video_player = VideoPlayer(None)
+
+    # Iniciar servidor para recibir video procesado
+    threading.Thread(target=recibir_video_procesado, daemon=True).start()
 
     # Función para manejar el evento del botón "Cargar"
     def on_cargar(left_thumbnails_frame):

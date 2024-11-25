@@ -3,7 +3,7 @@ videos_procesados_c
 cluster_received
 processed_videos
 divided_parts
-processed_parts
 node_processed
 node_received
 video_final
+processed_parts
