@@ -1,3 +1,5 @@
+import threading
+from recorder import grabar_video
 from utils import cargar_video, actualizar_miniaturas
 import os
 from PIL import Image, ImageTk
@@ -114,17 +116,13 @@ def main():
     # Crear el reproductor de video
     video_player = VideoPlayer(None)
 
-    # Crear la interfaz con la funcionalidad del botón "Cargar"
+    # Función para manejar el evento del botón "Cargar"
     def on_cargar(left_thumbnails_frame):
-        # Llamar a la función para cargar el video
         video_path = cargar_video(VIDEOS_CLIENTE_FOLDER)
         if video_path:
-            # Actualizar dinámicamente las miniaturas
             thumbnails_cliente = actualizar_miniaturas(VIDEOS_CLIENTE_FOLDER)
-            # Limpiar el contenido actual del contenedor
             for widget in left_thumbnails_frame.winfo_children():
                 widget.destroy()
-            # Agregar las nuevas miniaturas
             for i, (file, image, path) in enumerate(thumbnails_cliente):
                 thumbnail_button = tk.Button(
                     left_thumbnails_frame,
@@ -141,7 +139,38 @@ def main():
                 col = i % 2
                 thumbnail_button.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
 
-    create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar)
+    # Función para manejar el evento del botón "Grabar" (con threading)
+    def on_grabar(left_thumbnails_frame):
+        def grabar_y_actualizar():
+            video_path = grabar_video(VIDEOS_CLIENTE_FOLDER)
+            if video_path:
+                # Actualizar miniaturas en el hilo principal
+                root.after(0, lambda: actualizar_thumbnails(left_thumbnails_frame))
+
+        # Ejecutar la grabación en un hilo separado
+        threading.Thread(target=grabar_y_actualizar).start()
+
+    def actualizar_thumbnails(left_thumbnails_frame):
+        thumbnails_cliente = actualizar_miniaturas(VIDEOS_CLIENTE_FOLDER)
+        for widget in left_thumbnails_frame.winfo_children():
+            widget.destroy()
+        for i, (file, image, path) in enumerate(thumbnails_cliente):
+            thumbnail_button = tk.Button(
+                left_thumbnails_frame,
+                image=image,
+                text=file,
+                compound="top",
+                command=lambda p=path: video_player.play_video(p),
+                width=150,
+                height=120,
+                relief="groove",
+            )
+            thumbnail_button.image = image
+            row = i // 2
+            col = i % 2
+            thumbnail_button.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
+
+    create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar=on_cargar, on_grabar=on_grabar)
 
 
 if __name__ == "__main__":

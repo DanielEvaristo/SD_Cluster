@@ -1,10 +1,10 @@
 import tkinter as tk
 
-def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar=None):
+def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar=None, on_grabar=None):
     root.title("Interfaz de Video")
     root.geometry("1000x600")
     root.configure(bg="white")
-    root.state('zoomed')
+    root.state('zoomed')  # Abrir en pantalla completa
 
     # Parte izquierda: Lista de videos cliente
     left_frame = tk.Frame(root, bg="lightgray", padx=10, pady=10)
@@ -33,7 +33,7 @@ def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_
         col = i % 2
         thumbnail_button.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
 
-    # Parte central
+    # Parte central: Reproducción y botones
     center_frame = tk.Frame(root, bg="white")
     center_frame.grid(row=0, column=1, sticky="nswe", padx=5, pady=5)
     center_frame.grid_rowconfigure(0, weight=1)
@@ -57,16 +57,14 @@ def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_
     load_button = tk.Button(button_frame, text="Cargar", command=lambda: on_cargar(left_thumbnails_frame), **button_style)
     load_button.pack(side="left", padx=10)
 
-    send_button = tk.Button(button_frame, text="Enviar", **button_style)
-    send_button.pack(side="left", padx=10)
-
-    record_button = tk.Button(button_frame, text="Grabar", **button_style)
+    record_button = tk.Button(button_frame, text="Grabar", command=lambda: on_grabar(left_thumbnails_frame), **button_style)
     record_button.pack(side="left", padx=10)
+
 
     stop_button = tk.Button(button_frame, text="Detener", command=video_player.stop_video, **button_style)
     stop_button.pack(side="left", padx=10)
 
-    # Parte derecha
+    # Parte derecha: Videos procesados
     right_frame = tk.Frame(root, bg="lightgray", padx=10, pady=10)
     right_frame.grid(row=0, column=2, sticky="nswe", padx=5, pady=5)
 
@@ -98,3 +96,4 @@ def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_
     root.grid_columnconfigure(2, weight=1)
 
     root.mainloop()
+
