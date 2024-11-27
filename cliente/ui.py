@@ -1,7 +1,6 @@
 import tkinter as tk
 
-
-def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar=None, on_grabar=None, on_enviar=None):
+def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_cargar=None, on_grabar=None, on_enviar=None, on_actualizar=None):
     root.title("Interfaz de Video")
     root.geometry("1000x600")
     root.configure(bg="white")
@@ -120,6 +119,14 @@ def create_ui(thumbnails_cliente, thumbnails_procesados, video_player, root, on_
         **button_style
     )
     stop_button.pack(side="left", padx=10)
+
+    refresh_button = tk.Button(
+        button_frame,
+        text="Actualizar",
+        command=on_actualizar,  # Llama a la función on_actualizar
+        **button_style
+    )
+    refresh_button.pack(side="left", padx=10)
 
     # Parte derecha: Videos procesados
     right_frame = tk.Frame(root, bg="lightgray", padx=10, pady=10)
