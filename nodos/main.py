@@ -1,6 +1,6 @@
 import os
 import socket
-from video_utils import editar_video
+from video_utils import editar_video_invertir
 
 # Configuración del nodo
 HOST = '127.0.0.1'  # Dirección local del nodo
@@ -38,7 +38,7 @@ def start_node():
                 print(f"Archivo recibido: {filepath}")
 
                 # Editar el video
-                processed_path = editar_video(filepath, PROCESSED_FOLDER)
+                processed_path = editar_video_invertir(filepath, PROCESSED_FOLDER)
 
                 # Enviar el archivo procesado de vuelta al cluster
                 send_back_to_cluster(processed_path)

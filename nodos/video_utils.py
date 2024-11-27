@@ -1,67 +1,28 @@
 import os
 import cv2
 
-def dividir_video(filepath, output_folder, num_partes):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
-    cap = cv2.VideoCapture(filepath)
-    if not cap.isOpened():
-        raise Exception(f"Error al abrir el archivo de video: {filepath}")
-
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frames_por_parte = total_frames // num_partes
-    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-
-    print(f"Total de frames: {total_frames}, Frames por parte: {frames_por_parte}, FPS: {fps}")
-
-    partes = []
-    for i in range(num_partes):
-        output_path = os.path.join(output_folder, f"parte_{i + 1}.mp4")
-        partes.append(output_path)
-
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
-
-        for _ in range(frames_por_parte):
-            ret, frame = cap.read()
-            if not ret:
-                break
-            out.write(frame)
-
-        out.release()
-
-    if total_frames % num_partes > 0:
-        print("Distribuyendo frames extra a la última parte.")
-        extra_writer = cv2.VideoWriter(partes[-1], cv2.VideoWriter_fourcc(*'mp4v'), fps, (ancho, alto))
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            extra_writer.write(frame)
-        extra_writer.release()
-
-    cap.release()
-    return partes
-
 def editar_video(filepath, output_folder):
+    """
+    Aplica un efecto cromático (COLORMAP_JET) al video y lo guarda con el nombre estándar.
+    """
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
+    # Cambiar el nombre del archivo procesado
+    base_name = os.path.basename(filepath).replace("parte_", "processed_parte_")
+    output_path = os.path.join(output_folder, base_name)
+    
     cap = cv2.VideoCapture(filepath)
     if not cap.isOpened():
         raise Exception(f"Error al abrir el archivo de video: {filepath}")
 
-    output_path = os.path.join(output_folder, f"processed_{os.path.basename(filepath)}")
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
 
-    print(f"Editando video: {filepath}")
+    print(f"Editando video (cromático): {filepath}")
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -69,6 +30,148 @@ def editar_video(filepath, output_folder):
         # Apply chromatic effect
         chromatic_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
         out.write(chromatic_frame)
+
+    cap.release()
+    out.release()
+    print(f"Video procesado y guardado en: {output_path}")
+    return output_path
+
+
+def editar_video_bn(filepath, output_folder):
+    """
+    Convierte el video a blanco y negro y lo guarda con el nombre estándar.
+    """
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Cambiar el nombre del archivo procesado
+    base_name = os.path.basename(filepath).replace("parte_", "processed_parte_")
+    output_path = os.path.join(output_folder, base_name)
+
+    cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        raise Exception(f"Error al abrir el archivo de video: {filepath}")
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
+
+    print(f"Editando video (blanco y negro): {filepath}")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Convert frame to grayscale
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Convert back to BGR for saving in the output video
+        bw_frame = cv2.cvtColor(gray_frame, cv2.COLOR_GRAY2BGR)
+        out.write(bw_frame)
+
+    cap.release()
+    out.release()
+    print(f"Video procesado y guardado en: {output_path}")
+    return output_path
+
+
+def editar_video_desenfoque(filepath, output_folder):
+    """
+    Aplica un efecto de desenfoque gaussiano al video y lo guarda con el nombre estándar.
+    """
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Cambiar el nombre del archivo procesado
+    base_name = os.path.basename(filepath).replace("parte_", "processed_parte_")
+    output_path = os.path.join(output_folder, base_name)
+
+    cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        raise Exception(f"Error al abrir el archivo de video: {filepath}")
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
+
+    print(f"Editando video (desenfoque): {filepath}")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Apply Gaussian blur
+        blurred_frame = cv2.GaussianBlur(frame, (15, 15), 0)
+        out.write(blurred_frame)
+
+    cap.release()
+    out.release()
+    print(f"Video procesado y guardado en: {output_path}")
+    return output_path
+
+def editar_video_bordeado(filepath, output_folder):
+    """
+    Resalta los bordes del video usando el operador Canny.
+    """
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    base_name = os.path.basename(filepath).replace("parte_", "processed_parte_")
+    output_path = os.path.join(output_folder, base_name)
+
+    cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        raise Exception(f"Error al abrir el archivo de video: {filepath}")
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
+
+    print(f"Editando video (bordeado): {filepath}")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray_frame, 100, 200)
+        edge_frame = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+        out.write(edge_frame)
+
+    cap.release()
+    out.release()
+    print(f"Video procesado y guardado en: {output_path}")
+    return output_path
+
+def editar_video_invertir(filepath, output_folder):
+    """
+    Invierte los colores del video (efecto negativo).
+    """
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    base_name = os.path.basename(filepath).replace("parte_", "processed_parte_")
+    output_path = os.path.join(output_folder, base_name)
+
+    cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        raise Exception(f"Error al abrir el archivo de video: {filepath}")
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    ancho = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (ancho, alto))
+
+    print(f"Editando video (inversión de colores): {filepath}")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        inverted_frame = cv2.bitwise_not(frame)
+        out.write(inverted_frame)
 
     cap.release()
     out.release()
